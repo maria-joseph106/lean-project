@@ -1,17 +1,17 @@
 import Mathlib.Tactic
 import Mathlib.Data.Matrix.Basis
 import Mathlib.Data.Matrix.DMatrix
-import Mathlib.LinearAlgebra.Matrix.Determinant
+import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.LinearAlgebra.Matrix.Reindex
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Data.Real.Basic
-import Mathlib.Algebra.BigOperators.Basic
+import Mathlib.Algebra.BigOperators.Finsupp.Basic
 import Mathlib.Data.PEquiv
 import Mathlib.LinearAlgebra.Matrix.Transvection
 import Mathlib.Logic.Equiv.Basic
 import Mathlib.Data.Matrix.PEquiv
 import Mathlib.Data.Matrix.Reflection
-import Mathlib.Algebra.Group.OrderSynonym
+--import Mathlib.Algebra.Group.OrderSynonym
 
 open Matrix BigOperators
 open Equiv Equiv.Perm Finset Function
