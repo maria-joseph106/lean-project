@@ -20,7 +20,7 @@ namespace matrix
 open matrix
 variable {m n p : Type*} [DecidableEq n] [Fintype n] [DecidableEq m] [Fintype m][DecidableEq p]
 
-variable {R : Type v} [CommRing R]
+variable {R : Type*} [CommRing R]
 
 variable {𝕜 : Type*} [Field 𝕜]
 
@@ -30,33 +30,42 @@ def RowEx (i j : n): Matrix n n R :=
 (Equiv.swap i j).toPEquiv.toMatrix
 
 --RowEx i i is the identity matrix
-theorem RowExii_eq_id : RowEx i i = (1 : Matrix n n R) := by simp[RowEx]
+theorem RowExii_eq_id (i : n): RowEx i i = (1 : Matrix n n R) := by simp[RowEx]
 
 --RowEx i j is precisely swapping the ith row of the identity matrix with the jth one and
 --swapping the jth row of the identity row with the ith one
-theorem updaterow_eq_swap [Finite n]:
+theorem updaterow_eq_swap (i j : n)[Finite n]:
 updateRow (updateRow (1 : Matrix n n R) i ((1 :Matrix n n R) j)) j ((1 : Matrix n n R) i) =
 RowEx i j := by
 ext a b
 by_cases ha : i = a; by_cases hb : j = b
 · simp[ha,hb]
-  rw[RowEx,PEquiv.equiv_toPEquiv_toMatrix,Equiv.swap_apply_left,Matrix.updateRow_apply,Matrix.updateRow_self]
+  rw[RowEx,PEquiv.toMatrix_toPEquiv_eq]
+  dsimp
+  rw[Equiv.swap_apply_left,Matrix.updateRow_apply,Matrix.updateRow_self]
   by_cases hab : a = b
-  simp[hab]
-  rw[if_neg hab]
+  rw[if_pos hab,ha,hab]
+  rfl
+  rw[if_neg hab,hb]
+  rfl
 · rw [ha,RowEx]
-  rw[PEquiv.equiv_toPEquiv_toMatrix,Equiv.swap_apply_left,Matrix.updateRow_apply,Matrix.updateRow_self]
+  rw[PEquiv.toMatrix_toPEquiv_eq]
+  dsimp
+  rw[Equiv.swap_apply_left,Matrix.updateRow_apply,Matrix.updateRow_self]
   by_cases haj : a = j
-  · rw[haj,if_pos rfl]
+  · rw[if_pos haj, haj]
+    rfl
   · rw[if_neg haj]
+    rfl
 · rw[RowEx]
-  rw[PEquiv.equiv_toPEquiv_toMatrix,Matrix.updateRow_apply,Matrix.updateRow_apply,Equiv.swap_apply_def]
+  rw[PEquiv.toMatrix_toPEquiv_eq,Matrix.updateRow_apply,Matrix.updateRow_apply]
+  dsimp
+  rw[Equiv.swap_apply_def]
   by_cases haj : a = j
   · rw[if_pos haj,if_neg (ne_comm.mp ha),if_pos haj]
-  · simp[if_neg haj,if_neg (ne_comm.mp ha)]
-
-
-
+    rfl
+  · rw[if_neg haj,if_neg (ne_comm.mp ha), if_neg haj, if_neg (ne_comm.mp ha)]
+    rfl
 
 -- It is commutative
 theorem RowEx_comm (i j : m) :
@@ -73,21 +82,21 @@ by_cases ha : i = a; by_cases hb : j = b
 · simp[ha,hb]
   simp[Matrix.updateRow_apply]
   by_cases hab : a = b;
-  · simp[if_pos hab,RowEx,PEquiv.toPEquiv_mul_matrix,hab]
+  · simp[if_pos hab,RowEx,PEquiv.toMatrix_toPEquiv_mul,hab]
   · simp[if_neg hab,RowEx]
-    rw[PEquiv.toPEquiv_mul_matrix]
+    rw[PEquiv.toMatrix_toPEquiv_mul]
     simp
 · simp[Matrix.updateRow_apply,ha]
   by_cases haj : a = j;
-  · rw[if_pos haj,RowEx,PEquiv.toPEquiv_mul_matrix]
+  · rw[if_pos haj,RowEx,PEquiv.toMatrix_toPEquiv_mul]
     simp[haj]
-  · rw[if_neg haj,RowEx,PEquiv.toPEquiv_mul_matrix]
+  · rw[if_neg haj,RowEx,PEquiv.toMatrix_toPEquiv_mul]
     simp
 · simp[Matrix.updateRow_apply]
   by_cases haj : a = j;
-  · rw[if_pos haj,RowEx,PEquiv.toPEquiv_mul_matrix]
+  · rw[if_pos haj,RowEx,PEquiv.toMatrix_toPEquiv_mul]
     simp[haj]
-  · rw[if_neg haj,if_neg (ne_comm.mp ha),RowEx,PEquiv.toPEquiv_mul_matrix]
+  · rw[if_neg haj,if_neg (ne_comm.mp ha),RowEx,PEquiv.toMatrix_toPEquiv_mul]
     simp[Equiv.swap_apply_def,if_neg (ne_comm.mp ha),if_neg haj]
 
 
@@ -112,16 +121,18 @@ by_cases hai : i = a ; by_cases hbj : j = b
 
 
 --RowEx i j is the inverse of itself
-theorem RowExii_mulself_id : RowEx i j * RowEx i j = (1 : Matrix n n R) := by
+theorem RowExii_mulself_id (i j : n) : RowEx i j * RowEx i j = (1 : Matrix n n R) := by
 rw[RowExmul_eq_swap,←updaterow_eq_swap,Matrix.updateRow_self]
 ext a b
 by_cases hai : i = a ; by_cases hbj : j = b
 · simp[hai,hbj,Matrix.updateRow_apply]
-  intros hab hnab
-  simp[hab]
+  by_cases hab : a = b;
+  rw[if_pos hab,if_pos hab,hai]
+  rw[if_neg hab,hai]
 · simp[hai,Matrix.updateRow_apply]
-  intros haj hnaj
-  simp[← haj]
+  by_cases haj : a = j;
+  rw[if_pos haj,if_pos haj,hai]
+  rw[if_neg haj,hai]
 · simp[Matrix.updateRow_apply]
   by_cases haj : a = j;
   · rw[if_pos haj,if_neg ,haj]
@@ -129,24 +140,20 @@ by_cases hai : i = a ; by_cases hbj : j = b
   · simp[if_neg haj, if_neg (ne_comm.mp hai)]
 
 
-
-
-
-
 --on multiplying by RowEx i j , the jth row becomes the ith row
-theorem RowExmul_applyi_eq (M : Matrix n n R) (b : n) : (RowEx i j * M:) j b = M i b := by
+theorem RowExmul_applyi_eq (M : Matrix n n R) (i j b : n) : (RowEx i j * M:) j b = M i b := by
 rw[RowExmul_eq_swap]
 simp[updateRow_apply]
 
 --on multiplying by RowEx i j , the ith row becomes the jth row
-theorem RowExmul_applyj_eq (M : Matrix n n R) (b : n) : (RowEx i j * M:) i b = M j b := by
+theorem RowExmul_applyj_eq (M : Matrix n n R) (i j b : n) : (RowEx i j * M:) i b = M j b := by
 rw[RowExmul_eq_swap]
 simp[updateRow_apply]
 intro h
 rw[h]
 
 --on multiplying by RowEx i j , if l ≠ j and l ≠ i then the lth row remains unchanged
-theorem RowExmul_apply_ne (b : n) (hi : i ≠ l) (hj : j ≠ l) (M : Matrix n n R): M l b = (RowEx i j * M:) l b :=by
+theorem RowExmul_apply_ne (i j l b : n) (hi : i ≠ l) (hj : j ≠ l) (M : Matrix n n R): M l b = (RowEx i j * M:) l b :=by
 simp[RowExmul_eq_swap,updateRow_apply]
 simp[if_neg (id (Ne.symm hi)),if_neg (id (Ne.symm hj))]
 
@@ -162,7 +169,7 @@ simp[RowEx,Matrix.det_permutation,Equiv.Perm.sign_swap,if_neg h]
 namespace struct
 
 open Sum Fin TransvectionStruct Pivot Matrix
-variable (R n)
+variable (R n r)
 --variable (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)
 
 theorem rowExInl (M: Matrix (Fin r) (Fin r) 𝕜) (i j :Fin r) :
@@ -223,8 +230,11 @@ simp[listid]
 
 
 
---For every r+1 by r+1 matrix M ,there is a list of transvections and a rowEx matrix such that multiplying on the left with the RowEx
---and then the list of transvections will make M₍ᵢ,ᵣ₊₁₎ = 0 for every 1 ≤ i < r+1
+-- For every r+1 by r+1 matrix M ,there is a list of transvections
+-- and a rowEx matrix such that multiplying on the left with the
+-- RowEx and then the list of transvections will make M₍ᵢ,ᵣ₊₁₎ = 0
+-- for every 1 ≤ i < r+1
+
 theorem transvec_RowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
  ∃ i :Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜), (∀ j : Fin r,
  ((L.map toMatrix).prod *(((RowEx i (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr unit) = 0) := by
