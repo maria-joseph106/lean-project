@@ -11,6 +11,7 @@ import Mathlib.LinearAlgebra.Matrix.Transvection
 import Mathlib.Logic.Equiv.Basic
 import Mathlib.Data.Matrix.PEquiv
 import Mathlib.Data.Matrix.Reflection
+--import Mathlib.LinearAlgebra.Matrix.Permutation
 --import Mathlib.Algebra.Group.OrderSynonym
 
 open Matrix BigOperators
@@ -165,7 +166,6 @@ simp[RowEx,Matrix.det_permutation,Equiv.Perm.sign_swap,if_neg h]
 
 
 
-
 namespace struct
 
 open Sum Fin TransvectionStruct Pivot Matrix
@@ -237,21 +237,21 @@ simp[listid]
 
 theorem transvec_RowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
  ∃ i :Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜), (∀ j : Fin r,
- ((L.map toMatrix).prod *(((RowEx i (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr unit) = 0) := by
+ ((L.map toMatrix).prod *(((RowEx i (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr 1) = 0) := by
  --Creating two cases, when M₍ᵣ₊₁,ᵣ₊₁₎ is zero and non-zero
-  by_cases M (inr unit) (inr unit) ≠ 0
+  by_cases M (inr 1) (inr 1) ≠ 0
   --First Case
   --Begin by creating the i and L that is required and inserting it in the goal
-  ·let a : Fin r ⊕ Unit := inr unit
+  ·let a : Fin r ⊕ Unit := inr 1
    exists a
    let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
     List.ofFn fun i : Fin r =>
-      ⟨inl i, inr unit, by simp, - (((RowEx a (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M) (inl i) (inr unit) /
-       (((RowEx a (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M) (inr unit) (inr unit)⟩
+      ⟨inl i, inr 1, by simp, - (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M) (inl i) (inr 1) /
+       (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M) (inr 1) (inr 1)⟩
    refine' ⟨ L,_⟩
    intro j
    --simplifying goal using listTransvecCol_mul_last_col and RowExid
-   have A : L.map toMatrix = listTransvecCol (((RowEx a (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
+   have A : L.map toMatrix = listTransvecCol (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
    := by simp [listTransvecCol, (· ∘ ·)]
    rw[A]
    simp[RowExid]
@@ -305,21 +305,21 @@ theorem transvec_RowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) U
 
 
 theorem exists_elimmatrix_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)  :
-∃(N : elimStruct (Fin r ⊕ Unit) 𝕜), (∀ j : Fin r , ((N.toElim) * M) (inl j) (inr unit) = 0) :=by
+∃(N : elimStruct (Fin r ⊕ Unit) 𝕜), (∀ j : Fin r , ((N.toElim) * M) (inl j) (inr 1) = 0) :=by
  · have TH :  ∃ i :Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜), (∀ j : Fin r,
-   ((L.map toMatrix).prod *(((RowEx i (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr unit) = 0):=by
-    apply transvec_RowEx_mul_lastcol M
+   ((L.map toMatrix).prod *(((RowEx i (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr 1) = 0):=by
+    exact transvec_RowEx_mul_lastcol r M
    cases TH with
    |intro k TH =>
    cases TH with
    |intro L' TH =>
    simp[toElim]
    let N': elimStruct (Fin r ⊕ Unit) 𝕜 :=
-   ⟨L',k,(inr unit)⟩
+   ⟨L',k,(inr 1)⟩
    exists N'
    simp[N']
    suffices  ∀ (j : Fin r),
-   (List.prod (List.map toMatrix L') * ((RowEx k (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) * M)) (inl j) (inr unit)
+   (List.prod (List.map toMatrix L') * ((RowEx k (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) * M)) (inl j) (inr 1)
     = 0 by
     simp[Matrix.mul_assoc]
     exact TH
@@ -331,12 +331,12 @@ open elimStruct
 
 
 
-theorem exists_Listelimmatrix_eq_lowertriangular:(IH : ∀ (M : Matrix (Fin r) (Fin r) 𝕜), ∃ ( E :List (elimStruct (Fin r) 𝕜))
+theorem exists_Listelimmatrix_eq_lowertriangular (IH : ∀ (M : Matrix (Fin r) (Fin r) 𝕜), ∃ ( E :List (elimStruct (Fin r) 𝕜))
  , ((E.map toElim).prod * M).BlockTriangular OrderDual.toDual) (M :Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
   ∃ (E₁ : List (elimStruct (Fin r ⊕ Unit) 𝕜) ),
   ((E₁.map toElim).prod * M).BlockTriangular OrderDual.toDual := by
   have HM : ∃ N : elimStruct (Fin r ⊕ Unit) 𝕜, ∀ (j : Fin r), (toElim N * M) (inl j) (inr Unit.unit) = 0 := by
-   apply exists_elimmatrix_mul_lastcol M
+   exact exists_elimmatrix_mul_lastcol r M
   cases HM with
   |intro N HM =>
   let M' := N.toElim*M
