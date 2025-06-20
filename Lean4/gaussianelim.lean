@@ -11,8 +11,7 @@ import Mathlib.LinearAlgebra.Matrix.Transvection
 import Mathlib.Logic.Equiv.Basic
 import Mathlib.Data.Matrix.PEquiv
 import Mathlib.Data.Matrix.Reflection
---import Mathlib.LinearAlgebra.Matrix.Permutation
---import Mathlib.Algebra.Group.OrderSynonym
+import Mathlib.LinearAlgebra.Matrix.Permutation
 
 open Matrix BigOperators
 open Equiv Equiv.Perm Finset Function
@@ -239,7 +238,7 @@ theorem transvec_RowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) U
  ∃ i :Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜), (∀ j : Fin r,
  ((L.map toMatrix).prod *(((RowEx i (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr 1) = 0) := by
  --Creating two cases, when M₍ᵣ₊₁,ᵣ₊₁₎ is zero and non-zero
-  by_cases M (inr 1) (inr 1) ≠ 0
+  by_cases hMne0: M (inr 1) (inr 1) ≠ 0
   --First Case
   --Begin by creating the i and L that is required and inserting it in the goal
   ·let a : Fin r ⊕ Unit := inr 1
@@ -252,7 +251,7 @@ theorem transvec_RowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) U
    intro j
    --simplifying goal using listTransvecCol_mul_last_col and RowExid
    have A : L.map toMatrix = listTransvecCol (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
-   := by simp [listTransvecCol, (· ∘ ·)]
+   := by dsimp [listTransvecCol,(· ∘ ·)]
    rw[A]
    simp[RowExid]
    rw[listTransvecCol_mul_last_col]
@@ -346,13 +345,12 @@ theorem exists_Listelimmatrix_eq_lowertriangular (IH : ∀ (M : Matrix (Fin r) (
   set c := toBlocks₂₂ M'
   refine'⟨L.map (elimSum_Inl) ++ [N],_⟩
   suffices ((L.map (toElim ∘ elimSum_Inl)).prod * M').BlockTriangular OrderDual.toDual by simpa[Matrix.mul_assoc]
-  · have H : M' = fromBlocks (M'') 0 Mₐ c := by
-     simp
-     have X : toBlocks₁₂ (M') = 0 := by
+  have H : M' = fromBlocks (M'') 0 Mₐ c := by
+    have X : toBlocks₁₂ (M') = 0 := by
       ext a b
       simp[toBlocks₁₂]
-      rw[HM a]
-     rw[←X]
-     simp[Matrix.fromBlocks_toBlocks]
-    rw[H,go]
-    simpa[BlockTriangular]
+      exact HM a
+    rw[←X]
+    exact Eq.symm (fromBlocks_toBlocks M')
+  rw[H,go]
+  simpa[BlockTriangular]
