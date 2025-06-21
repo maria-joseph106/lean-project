@@ -24,16 +24,19 @@ variable {R : Type*} [CommRing R]
 
 variable {𝕜 : Type*} [Field 𝕜]
 
---nxn Identity matrices with the ith and jth row swapped is defined by RowEx i j.
+/-nxn Identity matrices with the ith and jth row swapped is defined by RowEx i j. -/
 
 def RowEx (i j : n): Matrix n n R :=
 (Equiv.swap i j).toPEquiv.toMatrix
 
+
+
 --RowEx i i is the identity matrix
 theorem RowExii_eq_id (i : n): RowEx i i = (1 : Matrix n n R) := by simp[RowEx]
 
---RowEx i j is precisely swapping the ith row of the identity matrix with the jth one and
---swapping the jth row of the identity row with the ith one
+/-RowEx i j is precisely swapping the ith row of the identity matrix with the jth one and swapping
+ the jth row of the identity row with the ith one -/
+
 theorem updaterow_eq_swap (i j : n)[Finite n]:
 updateRow (updateRow (1 : Matrix n n R) i ((1 :Matrix n n R) j)) j ((1 : Matrix n n R) i) =
 RowEx i j := by
@@ -68,13 +71,15 @@ by_cases ha : i = a; by_cases hb : j = b
     rfl
 
 -- It is commutative
-theorem RowEx_comm (i j : m) :
- RowEx i j = (RowEx j i : Matrix m m R)  := by
+theorem RowEx_comm (i j : n) :
+ RowEx i j = (RowEx j i : Matrix n n R)  := by
  simp[RowEx]
  rw[Equiv.swap_comm]
 
 
---Multiplying with a matrix M with RowEx i j on the left exchanges the ith row and the jth row of M with each other
+/-Multiplying with a matrix M with RowEx i j on the left exchanges the ith row and the jth row of M
+ with each other -/
+
 theorem RowExmul_eq_swap (i j: n)(M : Matrix n n R) : (RowEx i j : Matrix n n R) * M =
 updateRow (updateRow (M) i (M j)) j (M i) := by
 ext a b
@@ -229,79 +234,81 @@ simp[listid]
 
 
 
--- For every r+1 by r+1 matrix M ,there is a list of transvections
--- and a rowEx matrix such that multiplying on the left with the
--- RowEx and then the list of transvections will make M₍ᵢ,ᵣ₊₁₎ = 0
--- for every 1 ≤ i < r+1
+/- For every r+1 by r+1 matrix M ,there is a list of transvections and a rowEx matrix such that
+ multiplying on the left with the RowEx and then the list of transvections will make
+ M₍ᵢ,ᵣ₊₁₎ = 0 for every 1 ≤ i < r+1 -/
 
 theorem transvec_RowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
  ∃ i :Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜), (∀ j : Fin r,
  ((L.map toMatrix).prod *(((RowEx i (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr 1) = 0) := by
- --Creating two cases, when M₍ᵣ₊₁,ᵣ₊₁₎ is zero and non-zero
   by_cases hMne0: M (inr 1) (inr 1) ≠ 0
-  --First Case
+  --Case 1: Bottom-right entry is non-zero
   --Begin by creating the i and L that is required and inserting it in the goal
-  ·let a : Fin r ⊕ Unit := inr 1
-   exists a
+  ·let a : Fin r ⊕ Unit := inr 1 -- a = r+1
+   use a
+   let N : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜 := (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M) -- the matrix obtained after exchanging the a-th row with the last row
+   have hNM: N = M := by exact RowExid a M
    let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
     List.ofFn fun i : Fin r =>
-      ⟨inl i, inr 1, by simp, - (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M) (inl i) (inr 1) /
-       (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M) (inr 1) (inr 1)⟩
-   refine' ⟨ L,_⟩
+      ⟨inl i, inr 1, by simp, - N (inl i) (inr 1) / N (inr 1) (inr 1)⟩
+   refine' ⟨L,_⟩
    intro j
-   --simplifying goal using listTransvecCol_mul_last_col and RowExid
-   have A : L.map toMatrix = listTransvecCol (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
-   := by dsimp [listTransvecCol,(· ∘ ·)]
-   rw[A]
-   simp[RowExid]
-   rw[listTransvecCol_mul_last_col]
-   exact h
-   --Second Case
-  · push_neg at h
-  --Within the Second Case considering two cases when atleast one entry in last column is non-zero and when all entries are zero
-    by_cases (∃ i : Fin r, M (inl i) (inr unit) ≠ 0)
-    --2.1 Case
-    · cases h with
-      |intro i hi =>
+   have hLN : L.map toMatrix = listTransvecCol N
+   := by
+        simp [L,hNM,transvection,listTransvecCol]
+        rfl
+   have h1: RowEx a (inr 1) * M = N := by rfl
+   rw[hLN,h1,listTransvecCol_mul_last_col]
+   rw[hNM]
+   exact hMne0
+  --Case 2: Bottom-right entry is zero
+  · push_neg at hMne0
+
+  /-Within the Second Case considering two cases when atleast one entry in last column is non-zero
+  and when all entries are zero-/
+
+    by_cases hexistsNon0: (∃ i : Fin r, M (inl i) (inr 1) ≠ 0)
+    --Case 2.1: atleast one entry in the last column is non-zero
+    · rcases hexistsNon0 with ⟨i, hi⟩
       --if there is atleast one non-zero element in last column, you can make the M₍ᵣ₊₁,ᵣ₊₁₎ non-zero using RowEx
-      · have hn : (((RowEx (inl i) (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) * M) (inr unit) (inr unit) ≠ 0) := by
+      · have hn : (((RowEx (inl i) (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) * M) (inr 1) (inr 1) ≠ 0) := by
          rw[RowExmul_eq_swap]
          rw[Matrix.updateRow_self]
          exact hi
          --Repeating a proof similar to Case 1 since M₍ᵣ₊₁,ᵣ₊₁₎ is non-zero
         let a : Fin r ⊕ Unit := inl i
-        exists a
+        use a
+        let N: Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜 := (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
+        have h1: RowEx a (inr 1) * M = N := by rfl
         let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
-        List.ofFn fun i : Fin r =>
-        ⟨inl i, inr unit, by simp, - (((RowEx a (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M) (inl i) (inr unit) /
-        (((RowEx a (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M) (inr unit) (inr unit)⟩
-        refine' ⟨ L,_⟩
+         List.ofFn fun i : Fin r =>
+           ⟨inl i, inr 1, by simp, - N (inl i) (inr 1) / N (inr 1) (inr 1)⟩
+        refine' ⟨L,_⟩
         intro j
-        have A : L.map toMatrix = listTransvecCol (((RowEx a (inr unit) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
-        := by simp [listTransvecCol, (· ∘ ·)]
-        rw[A]
+        have hLN : L.map toMatrix = listTransvecCol N := by
+          simp [L,N,h1,listTransvecCol,transvection]
+          rfl
+        rw[hLN]
         rw[listTransvecCol_mul_last_col]
         exact hn
-    --2.2 Case
-    ·push_neg at h
-     let a : Fin r ⊕ Unit := inr unit
-     exists a
-     ---if all entries in the last column are zero L can be a list of identity matrices
-     let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
-     List.ofFn fun i : Fin r =>
-     ⟨inl i, inr unit, by simp, 0 ⟩
-     exists L
-     intro j
-     have A : L.map toMatrix = listid r := by
-      simp[listid, (· ∘ ·)]
-     rw[A,listid_prod_eq_id]
-     simp[h,RowExid]
-
-
-
-
-
-
+    --Case 2.2:  all entries in the last column are zero
+    · push_neg at hexistsNon0
+      let a : Fin r ⊕ Unit := inr 1
+      use a
+      ---if all entries in the last column are zero L can be a list of identity matrices
+      let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
+       List.ofFn fun i : Fin r =>
+         ⟨inl i, inr 1, by simp, 0⟩
+      use L
+      intro j
+      --have h1: ∀ i, (listid r)[i]? = (1: Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) := by
+      have hL : L.map toMatrix = listid r := by
+        refine List.map_eq_iff.mpr ?_
+        intro i
+        simp [listid,L,]
+        exact List.getElem?_replicate
+      rw[hL,listid_prod_eq_id,Matrix.one_mul,RowExii_eq_id,Matrix.one_mul]
+      exact hexistsNon0 j
 
 theorem exists_elimmatrix_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)  :
 ∃(N : elimStruct (Fin r ⊕ Unit) 𝕜), (∀ j : Fin r , ((N.toElim) * M) (inl j) (inr 1) = 0) :=by
@@ -327,8 +334,6 @@ theorem exists_elimmatrix_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r
 end elimStruct
 
 open elimStruct
-
-
 
 theorem exists_Listelimmatrix_eq_lowertriangular (IH : ∀ (M : Matrix (Fin r) (Fin r) 𝕜), ∃ ( E :List (elimStruct (Fin r) 𝕜))
  , ((E.map toElim).prod * M).BlockTriangular OrderDual.toDual) (M :Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
