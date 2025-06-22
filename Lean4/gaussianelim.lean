@@ -40,9 +40,16 @@ Given any matrix `M`, we can find a product of transvections and row exchange ma
  `(r+1)x(r+1)` identity matrix is the block matrix whose blocks are `M`, `0`, `0`, `1`.
 
 * `transvec_RowEx_mul_lastcol` states that for every (r+1)x(r+1) matrix M ,there is a list of
-  transvections and a row exchange matrix such that multiplying on the left with the RowEx and then the list of transvections will make M₍ᵢ,ᵣ₊₁₎ = 0 for every 1 ≤ i < r+1
+  transvections and a row exchange matrix such that multiplying on the left with the RowEx and then
+  the list of transvections will make M₍ᵢ,ᵣ₊₁₎ = 0 for every 1 ≤ i < r+1
 
-* `exists_Listelimmatrix_eq_lowertriangular` states that given any matrix `M`, we can find a product of transvections and row exchange matrices `L` such `L * M` is an lower triangular matrix.
+* `exists_Listelimmatrix_eq_lowertriangular` states that given any matrix `M`, we can find a
+  product of transvections and row exchange matrices `L` such that `L * M` is an lower triangular
+  matrix.
+
+## Tags
+
+linear algerba, matrix, matrices, linear equations, Gaussian Elimination
 
 -/
 
@@ -57,24 +64,21 @@ variable {R : Type*} [CommRing R]
 
 variable {𝕜 : Type*} [Field 𝕜]
 
-/-RowEx i j is the matrix obtained by swapping the ith and jth row of an nxn identity matrix. -/
-
+/-- `RowEx i j` is the matrix obtained by swapping the ith and jth row of an nxn identity matrix. -/
 def RowEx (i j : n) : Matrix n n R :=
 (Equiv.swap i j).toPEquiv.toMatrix
 
-
-
---RowEx i i is the identity matrix
+/-- `RowEx i i` is the identity matrix -/
 theorem RowExii_eq_id (i : n) : RowEx i i = (1 : Matrix n n R) := by simp[RowEx]
 
-/-RowEx i j is precisely swapping the ith row of the identity matrix with the jth one and swapping
- the jth row of the identity row with the ith one -/
-
+/-- `RowEx i j` is precisely swapping the ith row of the identity matrix with the jth one and
+swapping the jth row of the identity row with the ith one -/
 theorem updaterow_eq_swap (i j : n)[Finite n] :
     updateRow (updateRow (1 : Matrix n n R) i ((1 :Matrix n n R) j)) j ((1 : Matrix n n R) i) =
     RowEx i j := by
   ext a b
-  by_cases ha : i = a ; by_cases hb : j = b
+  by_cases ha : i = a
+  by_cases hb : j = b
   · simp[ha,hb]
     rw[RowEx,PEquiv.toMatrix_toPEquiv_eq]
     dsimp
@@ -103,119 +107,122 @@ theorem updaterow_eq_swap (i j : n)[Finite n] :
     · rw[if_neg haj,if_neg (ne_comm.mp ha), if_neg haj, if_neg (ne_comm.mp ha)]
       rfl
 
+theorem RowEx_comm (i j : n) : RowEx i j = (RowEx j i : Matrix n n R) := by
+  simp[RowEx]
+  rw[Equiv.swap_comm]
 
-theorem RowEx_comm (i j : n) :
- RowEx i j = (RowEx j i : Matrix n n R) := by
- simp[RowEx]
- rw[Equiv.swap_comm]
-
-
-/-Multiplying with a matrix M with RowEx i j on the left exchanges the ith row and the jth row of M
+/-Multiplying a matrix `M` on the left with `RowEx i j` exchanges the ith row and the jth row of `M`
  with each other -/
-
 theorem RowExmul_eq_swap (i j : n)(M : Matrix n n R) : (RowEx i j : Matrix n n R) * M =
     updateRow (updateRow (M) i (M j)) j (M i) := by
   ext a b
-  by_cases ha : i = a ; by_cases hb : j = b
+  by_cases ha : i = a
+  by_cases hb : j = b
   · simp[ha,hb]
     simp[Matrix.updateRow_apply]
-    by_cases hab : a = b ;
+    by_cases hab : a = b
     · simp[if_pos hab,RowEx,PEquiv.toMatrix_toPEquiv_mul,hab]
     · simp[if_neg hab,RowEx]
       rw[PEquiv.toMatrix_toPEquiv_mul]
       simp
   · simp[Matrix.updateRow_apply,ha]
-    by_cases haj : a = j ;
+    by_cases haj : a = j
     · rw[if_pos haj,RowEx,PEquiv.toMatrix_toPEquiv_mul]
       simp[haj]
     · rw[if_neg haj,RowEx,PEquiv.toMatrix_toPEquiv_mul]
       simp
   · simp[Matrix.updateRow_apply]
-    by_cases haj : a = j ;
+    by_cases haj : a = j
     · rw[if_pos haj,RowEx,PEquiv.toMatrix_toPEquiv_mul]
       simp[haj]
     · rw[if_neg haj,if_neg (ne_comm.mp ha),RowEx,PEquiv.toMatrix_toPEquiv_mul]
       simp[Equiv.swap_apply_def,if_neg (ne_comm.mp ha),if_neg haj]
 
-
+/--`RowEx i i` is the identity matrix-/
 theorem RowExid (i :m) (M : Matrix m m R): (RowEx i i : Matrix m m R) * M = M := by
   simp[RowExmul_eq_swap]
 
---RowEx i j and RowEx j i are inverses of each other
+/-- `RowEx i j` and `RowEx j i` are inverses of each other-/
 theorem RowExij_mul_Rowexji_eq_id [Finite n](i j : n):
     RowEx j i * RowEx i j = (1 : Matrix n n R):= by
   rw[RowExmul_eq_swap,←updaterow_eq_swap,Matrix.updateRow_self]
   ext a b
-  by_cases hai : i = a ; by_cases hbj : j = b
+  by_cases hai : i = a
+  by_cases hbj : j = b
   · rw[hai,hbj,Matrix.updateRow_apply,if_pos rfl]
   · rw[hai,Matrix.updateRow_self]
   · simp[Matrix.updateRow_apply,if_neg (ne_comm.mp hai)]
-    by_cases haj : a = j ;
+    by_cases haj : a = j
     · rw[if_pos haj,if_neg, haj]
       exact Ne.trans_eq hai haj
     · rw[if_neg haj,if_neg haj]
 
 
---RowEx i j is the inverse of itself
+/-- `RowEx i j` is its own inverse-/
 theorem RowExii_mulself_id (i j : n) : RowEx i j * RowEx i j = (1 : Matrix n n R) := by
   rw[RowExmul_eq_swap,←updaterow_eq_swap,Matrix.updateRow_self]
   ext a b
-  by_cases hai : i = a ; by_cases hbj : j = b
+  by_cases hai : i = a
+  by_cases hbj : j = b
   · simp[hai,hbj,Matrix.updateRow_apply]
-    by_cases hab : a = b ;
+    by_cases hab : a = b
     rw[if_pos hab,if_pos hab,hai]
     rw[if_neg hab,hai]
   · simp[hai,Matrix.updateRow_apply]
-    by_cases haj : a = j ;
+    by_cases haj : a = j
     rw[if_pos haj,if_pos haj,hai]
     rw[if_neg haj,hai]
   · simp[Matrix.updateRow_apply]
-    by_cases haj : a = j ;
+    by_cases haj : a = j
     · rw[if_pos haj,if_neg ,haj]
       exact Ne.trans_eq hai haj
     · simp[if_neg haj, if_neg (ne_comm.mp hai)]
 
 
---on multiplying by RowEx i j , the jth row becomes the ith row
+/-- on multiplying by `RowEx i j`, the jth row becomes the ith row -/
 theorem RowExmul_applyi_eq (M : Matrix n n R) (i j b : n) : (RowEx i j * M:) j b = M i b := by
   rw[RowExmul_eq_swap]
   simp[updateRow_apply]
 
---on multiplying by RowEx i j , the ith row becomes the jth row
+/-- on multiplying by `RowEx i j`, the ith row becomes the jth row -/
 theorem RowExmul_applyj_eq (M : Matrix n n R) (i j b : n) : (RowEx i j * M:) i b = M j b := by
   rw[RowExmul_eq_swap]
   simp[updateRow_apply]
   intro h
   rw[h]
 
---on multiplying by RowEx i j , if l ≠ j and l ≠ i then the lth row remains unchanged
+/-- on multiplying by `RowEx i j` , if l ≠ j and l ≠ i then the lth row remains unchanged -/
 theorem RowExmul_apply_ne (i j l b : n) (hi : i ≠ l) (hj : j ≠ l) (M : Matrix n n R):
     M l b = (RowEx i j * M:) l b := by
   simp[RowExmul_eq_swap,updateRow_apply]
   simp[if_neg (id (Ne.symm hi)),if_neg (id (Ne.symm hj))]
 
---The determinant of RowEx i j when i ≠ j is -1
+/--The determinant of `RowEx i j` when i ≠ j is -1 -/
 theorem RowEx_ne_det (i j : n)(h : i ≠ j): det (RowEx i j) = (-1 : R) := by
   simp[RowEx,Matrix.det_permutation,Equiv.Perm.sign_swap,if_neg h]
-
 
 namespace struct
 
 open Sum Fin TransvectionStruct Pivot Matrix
 variable (R n r)
 
-theorem rowExInl (M: Matrix (Fin r) (Fin r) 𝕜) (i j :Fin r) :
-    fromBlocks ((RowEx i j)*M) 0 0 (1: Matrix Unit Unit 𝕜) =
-    (RowEx (inl i) (inl j))* (fromBlocks M 0 0 (1: Matrix Unit Unit 𝕜)) := by
+/-- Let `A` be the block matrix with blocks `M`, `0`, `0`, `1` and `M'` be the matrix obtained by
+exchanging the ith and jth row of `M`.  Then, the block matrix with blocks `M'`, `0`, `0`, `1` is
+the equal to the matrix `A'` obtained by exchanging the ith and jth row of `A`  -/
+theorem RowExInl (M: Matrix (Fin r) (Fin r) 𝕜) (i j : Fin r) :
+    fromBlocks ((RowEx i j) * M) 0 0 (1: Matrix Unit Unit 𝕜) =
+    (RowEx (inl i) (inl j)) * (fromBlocks M 0 0 (1 : Matrix Unit Unit 𝕜)) := by
   ext a b
   cases' a with a a <;> cases' b with b b
   any_goals {simp[RowExmul_eq_swap,Matrix.updateRow_apply]}
 
-theorem RowEx_InleqBlocks (i j : Fin r): fromBlocks (RowEx i j ) 0 0 (1: Matrix Unit Unit 𝕜) =
+/-- Let `I'` be the matrix obtained by exchanging the ith and jth row of the rxr identity matrix.  Then, the block matrix formed by blocks `I'`, `0`, `0`, `1` is equal to the matrix obtained by exchaning the ith and jth row row of (r+1)x(r+1) identity matrix -/
+theorem RowEx_InleqBlocks (i j : Fin r): fromBlocks (RowEx i j) 0 0 (1: Matrix Unit Unit 𝕜) =
     (RowEx (inl i) (inl j)) := by
-  suffices fromBlocks ((RowEx i j) * (1 : Matrix (Fin r) (Fin r) 𝕜)) 0 0 (1: Matrix Unit Unit 𝕜)=
-  (RowEx (inl i) (inl j)) * (1 : Matrix (Fin r ⊕ Unit) (Fin r ⊕ Unit) 𝕜) by simpa [Matrix.mul_one]
-  rw[rowExInl,Matrix.mul_one]
+  suffices fromBlocks ((RowEx i j) * (1 : Matrix (Fin r) (Fin r) 𝕜)) 0 0 (1: Matrix Unit Unit 𝕜) =
+    (RowEx (inl i) (inl j)) * (1 : Matrix (Fin r ⊕ Unit) (Fin r ⊕ Unit) 𝕜) by
+      simpa [Matrix.mul_one]
+  rw[RowExInl,Matrix.mul_one]
   simp
 
 /- A structure that contains all the information to construct an elimination matrix-/
@@ -229,64 +236,68 @@ namespace elimStruct
 
 variable {n R}
 
-def toElim (e : elimStruct n R) : Matrix n n R := ((e.L).map toMatrix).prod * (RowEx e.i e.j)
+/-- Converts an elimination structure to the corresponding elimination matrix -/
+def toElim (e : elimStruct n R) : Matrix n n R :=
+  List.prod (List.map toMatrix (e.L)) * (RowEx e.i e.j)
 
+/-- Converts an elimination structure for nxn matrix to an elimination structure for (n+k)x(n+k)
+matrix -/
 def elimSum_Inl (e : elimStruct n R ) : (elimStruct (n ⊕ k) R ) where
-  L := ((e.L).map (sumInl k))
+  L := (List.map (sumInl k) (e.L))
   i := inl e.i
   j := inl e.j
 
-theorem toMat_sumInl (e : elimStruct (Fin r) 𝕜) : (e.elimSum_Inl).toElim =
-    fromBlocks e.toElim 0 0 (1 : Matrix Unit Unit 𝕜) := by
+/-- `toElim (elimSum_Inl e)` is the block matrix with blocks `toElim e`, `0`, `0`, `1` -/
+theorem toMat_sumInl (e : elimStruct (Fin r) 𝕜) :
+    toElim (elimSum_Inl e) = fromBlocks (toElim e) 0 0 (1 : Matrix Unit Unit 𝕜) := by
   simp[toElim,elimSum_Inl,←RowEx_InleqBlocks ,sumInl_toMatrix_prod_mul]
 
+/-- The natural inclusion of elimStruct n to elimStruct n+kLet `L` be a list of elimination structure for rxr matrices, `M` be an rxr matrix, `N` be a 1x1 matrix, and `O` be a 1xk matrix.  Let `M'` be the block matrix with blocks `M`, `0`, `O`, `N`. Let `A` be the matrix obtained by converting each element of `L` into a matrix and taking their product.  Let `A'` be the matrix obtained by    -/
 theorem go (M : Matrix (Fin r) (Fin r) 𝕜) (L : List (elimStruct (Fin r) 𝕜))
-    (N : Matrix Unit Unit 𝕜) (O : Matrix Unit (Fin r) 𝕜):
-    (L.map (toElim ∘ elimSum_Inl)).prod * fromBlocks M (0: Matrix (Fin r) Unit 𝕜) O N =
-    fromBlocks ((L.map toElim).prod * M) (0: Matrix (Fin r) Unit 𝕜) O N := by
+    (N : Matrix Unit Unit 𝕜) (O : Matrix Unit (Fin r) 𝕜) :
+    List.prod (List.map (toElim ∘ elimSum_Inl) L) * fromBlocks M (0: Matrix (Fin r) Unit 𝕜) O N =
+    fromBlocks (List.prod (List.map toElim L) * M) (0: Matrix (Fin r) Unit 𝕜) O N := by
   induction' L with t L IH
   · simp
   · simp[Matrix.mul_assoc, IH, toMat_sumInl, fromBlocks_multiply]
 
---list of transvections where c is zero
+/-- List of k trivial (c is zero) transvections -/
 def listid(k:ℕ) : List (Matrix (Sum (Fin k) Unit) (Sum (Fin k) Unit) 𝕜) :=
-  List.ofFn fun i : Fin k => transvection (inl i) (inr Unit.unit) (0:𝕜)
+  List.ofFn fun i : Fin k ↦ transvection (inl i) (inr Unit.unit) (0:𝕜)
 
---Product of listid is an identity matrix
+/--Product of listid is an identity matrix -/
 theorem listid_prod_eq_id(r : ℕ) :
-    (listid r).prod = (1 : (Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) ) := by
+    List.prod (listid r) = (1 : (Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) ) := by
   simp[listid]
 
-/- For every r+1 by r+1 matrix M ,there is a list of transvections and a rowEx matrix such that
+/-- For every r+1 by r+1 matrix M ,there is a list of transvections and a rowEx matrix such that
  multiplying on the left with the RowEx and then the list of transvections will make
  M₍ᵢ,ᵣ₊₁₎ = 0 for every 1 ≤ i < r+1 -/
-
 theorem transvec_RowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
- ∃ i :Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜),
- (∀ j : Fin r, ((L.map toMatrix).prod *(((RowEx i (inr 1) :
- Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr 1) = 0) := by
+    ∃ i :Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜),
+    (∀ j : Fin r, (List.prod (List.map toMatrix L) * (((RowEx i (inr 1) :
+    Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr 1) = 0) := by
   by_cases hMne0: M (inr 1) (inr 1) ≠ 0
   --Case 1: Bottom-right entry is non-zero
   --Begin by creating the i and L that is required and inserting it in the goal
-  ·let a : Fin r ⊕ Unit := inr 1 -- a = r+1
-   use a
-   -- let N be the matrix obtained after exchanging the a-th row with the last row
-   let N : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜 :=
-    (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
-   have hNM: N = M := by exact RowExid a M
-   let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
-    List.ofFn fun i : Fin r =>
+  · let a : Fin r ⊕ Unit := inr 1 -- a = r+1
+    use a
+    -- let N be the matrix obtained after exchanging the a-th row with the last row
+    let N : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜 :=
+      (((RowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
+    have hNM: N = M := by exact RowExid a M
+    let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
+      List.ofFn fun i : Fin r ↦
       ⟨inl i, inr 1, by simp, - N (inl i) (inr 1) / N (inr 1) (inr 1)⟩
-   refine' ⟨L,_⟩
-   intro j
-   have hLN : L.map toMatrix = listTransvecCol N
-   := by
+    refine' ⟨L,_⟩
+    intro j
+    have hLN : List.map toMatrix L = listTransvecCol N := by
         simp [L,hNM,transvection,listTransvecCol]
         rfl
-   have h1: RowEx a (inr 1) * M = N := by rfl
-   rw[hLN,h1,listTransvecCol_mul_last_col]
-   rw[hNM]
-   exact hMne0
+    have h1: RowEx a (inr 1) * M = N := by rfl
+    rw[hLN,h1,listTransvecCol_mul_last_col]
+    rw[hNM]
+    exact hMne0
   --Case 2: Bottom-right entry is zero
   · push_neg at hMne0
 
@@ -310,11 +321,11 @@ theorem transvec_RowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) U
           Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
         have h1: RowEx a (inr 1) * M = N := by rfl
         let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
-         List.ofFn fun i : Fin r =>
+         List.ofFn fun i : Fin r ↦
            ⟨inl i, inr 1, by simp, - N (inl i) (inr 1) / N (inr 1) (inr 1)⟩
         refine' ⟨L,_⟩
         intro j
-        have hLN : L.map toMatrix = listTransvecCol N := by
+        have hLN : List.map toMatrix L = listTransvecCol N := by
           simp [L,N,h1,listTransvecCol,transvection]
           rfl
         rw[hLN]
@@ -326,12 +337,12 @@ theorem transvec_RowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) U
       use a
       ---if all entries in the last column are zero L can be a list of identity matrices
       let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
-       List.ofFn fun i : Fin r =>
+       List.ofFn fun i : Fin r ↦
          ⟨inl i, inr 1, by simp, 0⟩
       use L
       intro j
       --have h1: ∀ i, (listid r)[i]? = (1: Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) := by
-      have hL : L.map toMatrix = listid r := by
+      have hL : List.map toMatrix L = listid r := by
         refine List.map_eq_iff.mpr ?_
         intro i
         simp [listid,L,]
@@ -339,11 +350,14 @@ theorem transvec_RowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) U
       rw[hL,listid_prod_eq_id,Matrix.one_mul,RowExii_eq_id,Matrix.one_mul]
       exact hexistsNon0 j
 
+/-- Given a matrix `M`, there exists an elimination structure `N` such that when we multiply `M` on
+the left with the corresponding elimination matrix (`toElim N`), the first r entries of the last column of the
+resultant matrix are zero -/
 theorem exists_elimmatrix_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
-    ∃(N : elimStruct (Fin r ⊕ Unit) 𝕜), (∀ j : Fin r , ((N.toElim) * M) (inl j) (inr 1) = 0) := by
+    ∃(N : elimStruct (Fin r ⊕ Unit) 𝕜), (∀ j : Fin r , ((toElim N) * M) (inl j) (inr 1) = 0) := by
   · have TH : ∃ i :Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜),
     (∀ j : Fin r,
-    ((L.map toMatrix).prod *(((RowEx i (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜))
+    (List.prod (List.map toMatrix L) * (((RowEx i (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜))
     * M)) (inl j) (inr 1) = 0):= by
       exact transvec_RowEx_mul_lastcol r M
     cases TH with
@@ -365,24 +379,26 @@ end elimStruct
 
 open elimStruct
 
+/-- Given any matrix `M`, we can find a product of transvections and row exchange matrices `L` such
+that `L * M` is an lower triangular matrix -/
 theorem exists_Listelimmatrix_eq_lowertriangular (IH : ∀ (M : Matrix (Fin r) (Fin r) 𝕜),
     ∃ (E : List (elimStruct (Fin r) 𝕜)),
-    ((E.map toElim).prod * M).BlockTriangular OrderDual.toDual)
+    (List.prod (List.map toElim E) * M).BlockTriangular OrderDual.toDual)
     (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
     ∃(E₁ : List (elimStruct (Fin r ⊕ Unit) 𝕜)),
-    ((E₁.map toElim).prod * M).BlockTriangular OrderDual.toDual := by
+    (List.prod (List.map toElim E₁) * M).BlockTriangular OrderDual.toDual := by
   have HM : ∃ N : elimStruct (Fin r ⊕ Unit) 𝕜, ∀ (j : Fin r),
     (toElim N * M) (inl j) (inr Unit.unit) = 0 := by
    exact exists_elimmatrix_mul_lastcol r M
   cases HM with
   |intro N HM =>
-  let M' := N.toElim*M
+  let M' := N.toElim * M
   let M'' := toBlocks₁₁ M'
   rcases IH M'' with ⟨L, h₀⟩
   set Mₐ := toBlocks₂₁ M'
   set c := toBlocks₂₂ M'
-  refine'⟨L.map (elimSum_Inl) ++ [N],_⟩
-  suffices ((L.map (toElim ∘ elimSum_Inl)).prod * M').BlockTriangular OrderDual.toDual by
+  refine'⟨List.map (elimSum_Inl) L ++ [N],_⟩
+  suffices (List.prod (List.map (toElim ∘ elimSum_Inl) L) * M').BlockTriangular OrderDual.toDual by
     simpa[Matrix.mul_assoc]
   have H : M' = fromBlocks (M'') 0 Mₐ c := by
     have X : toBlocks₁₂ (M') = 0 := by
