@@ -70,7 +70,7 @@ variable {𝕜 : Type*} [Field 𝕜]
 
 /-- `rowEx i j` is the matrix obtained by swapping the ith and jth row of an nxn identity matrix. -/
 def rowEx (i j : n) : Matrix n n R :=
-(Equiv.swap i j).toPEquiv.toMatrix
+  (Equiv.swap i j).toPEquiv.toMatrix
 
 /-- `rowEx i i` is the identity matrix -/
 theorem rowEx_i_i_eq_id (i : n) : rowEx i i = (1 : Matrix n n R) := by simp[rowEx]
@@ -195,12 +195,12 @@ def elimBlkIncl (e : EliminationStr n R ) : (EliminationStr (n ⊕ k) R ) where
   i := inl e.i
   j := inl e.j
 
-/-- The natural inclusion of EliminationStr n to EliminationStr n+kLet `L` be a list of elimination
+/-- The natural inclusion of EliminationStr n to EliminationStr n+k. Let `L` be a list of elimination
 structure for rxr matrices, `M` be an rxr matrix, `N` be a 1x1 matrix, and `O` be a 1xk matrix.
 Let `M'` be the block matrix with blocks `M`, `0`, `O`, `N`. Let `A` be the matrix obtained by
 converting each element of `L` into a matrix and taking their product.  Let `A'` be the matrix
 obtained by    -/
-theorem go (M : Matrix (Fin r) (Fin r) 𝕜) (L : List (EliminationStr (Fin r) 𝕜))
+theorem elimBlkIncl_toElim_prod_mul (M : Matrix (Fin r) (Fin r) 𝕜) (L : List (EliminationStr (Fin r) 𝕜))
     (N : Matrix Unit Unit 𝕜) (O : Matrix Unit (Fin r) 𝕜) :
     List.prod (List.map (toElim ∘ elimBlkIncl) L) * fromBlocks M (0: Matrix (Fin r) Unit 𝕜) O N =
     fromBlocks (List.prod (List.map toElim L) * M) (0: Matrix (Fin r) Unit 𝕜) O N := by
@@ -327,5 +327,5 @@ theorem exists_list_elimmatrix_mul_eq_lowertriangular
     rw[←X]
     exact Eq.symm (fromBlocks_toBlocks M')
   rw[hM']
-  rw[go]
+  rw[elimBlkIncl_toElim_prod_mul]
   simpa[BlockTriangular]
