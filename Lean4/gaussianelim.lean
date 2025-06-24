@@ -227,33 +227,23 @@ theorem transvec_mul_rowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin 
   by_cases hMne0: M (inr 1) (inr 1) ≠ 0
   --Case 1: Bottom-right entry is non-zero
   --Begin by creating the i and L that is required and inserting it in the goal
-  · let a : Fin r ⊕ Unit := inr 1 -- a = r+1
-    use a
-    -- let N be the matrix obtained after exchanging the a-th row with the last row
-    let N : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜 :=
-      (((rowEx a (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
-    have hNM: N = M := by exact mul_rowEx_i_i_eq a M
+  · use inr 1
     let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
       List.ofFn fun i : Fin r ↦
-      ⟨inl i, inr 1, by simp, - N (inl i) (inr 1) / N (inr 1) (inr 1)⟩
-    refine' ⟨L,_⟩
+      ⟨inl i, inr 1, by simp, - M (inl i) (inr 1) / M (inr 1) (inr 1)⟩
+    use L
     intro j
-    have hLN : List.map toMatrix L = listTransvecCol N := by
-        simp [L,hNM,transvection,listTransvecCol]
+    have hLN : List.map toMatrix L = listTransvecCol M := by
+        simp [L,transvection,listTransvecCol]
         rfl
-    have ha: rowEx a (inr 1) * M = N := by rfl
+    have ha: rowEx (inr 1) (inr 1) * M = M := by exact mul_rowEx_i_i_eq (inr 1) M
     rw[hLN,ha,listTransvecCol_mul_last_col]
-    rw[hNM]
     exact hMne0
   --Case 2: Bottom-right entry is zero
   · push_neg at hMne0
-
-  /-Within the Second Case considering two cases when atleast one entry in last column is non-zero
-  and when all entries are zero-/
-
     by_cases hexistsNon0: (∃ i : Fin r, M (inl i) (inr 1) ≠ 0)
     --Case 2.1: atleast one entry in the last column is non-zero
-    · rcases hexistsNon0 with ⟨i, hi⟩
+    · cases' hexistsNon0 with i hi
       /-if there is atleast one non-zero element in last column, you can make the M₍ᵣ₊₁,ᵣ₊₁₎
        non-zero using rowEx -/
       · have hn : (((rowEx (inl i) (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)
@@ -262,26 +252,21 @@ theorem transvec_mul_rowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin 
          rw[Matrix.updateRow_self]
          exact hi
          --Repeating a proof similar to Case 1 since M₍ᵣ₊₁,ᵣ₊₁₎ is non-zero
-        let a : Fin r ⊕ Unit := inl i
-        use a
-        let N: Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜 := (((rowEx a (inr 1) :
-          Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)
-        have ha: rowEx a (inr 1) * M = N := by rfl
+        use inl i
+        let N: Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜 := (rowEx (inl i) (inr 1)) * M
         let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
          List.ofFn fun i : Fin r ↦
            ⟨inl i, inr 1, by simp, - N (inl i) (inr 1) / N (inr 1) (inr 1)⟩
-        refine' ⟨L,_⟩
+        use L
         intro j
         have hLN : List.map toMatrix L = listTransvecCol N := by
-          simp [L,N,ha,listTransvecCol,transvection]
+          simp [L,N,listTransvecCol,transvection]
           rfl
-        rw[hLN]
-        rw[listTransvecCol_mul_last_col]
+        rw[hLN,listTransvecCol_mul_last_col]
         exact hn
     --Case 2.2:  all entries in the last column are zero
     · push_neg at hexistsNon0
-      let a : Fin r ⊕ Unit := inr 1
-      use a
+      use inr 1
       ---if all entries in the last column are zero L can be a list of identity matrices
       let L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜) :=
        List.ofFn fun i : Fin r ↦
@@ -302,25 +287,11 @@ column of the resultant matrix are zero -/
 theorem exists_elimmatrix_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
     ∃ N : EliminationStr (Fin r ⊕ Unit) 𝕜,
     ∀ j : Fin r, ((toElim N) * M) (inl j) (inr 1) = 0 := by
-  · have hLCiL : ∃ i :Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜),
-    ∀ j : Fin r,
-    (List.prod (List.map toMatrix L) * (((rowEx i (inr 1) : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜))
-    * M)) (inl j) (inr 1) = 0:= by
-      exact transvec_mul_rowEx_mul_lastcol r M
-    cases hLCiL with
-    |intro k hLCL =>
-    cases hLCL with
-    |intro L' hLC =>
-    simp[toElim]
-    let N': EliminationStr (Fin r ⊕ Unit) 𝕜 :=
-    ⟨L',k,(inr 1)⟩
-    exists N'
-    simp[N']
-    suffices  ∀ (j : Fin r), (List.prod (List.map toMatrix L') * ((rowEx k (inr 1) :
-      Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) * M)) (inl j) (inr 1) = 0 by
-        simp[Matrix.mul_assoc]
-        exact hLC
-    exact hLC
+  rcases transvec_mul_rowEx_mul_lastcol r M with ⟨k, L', hLC⟩
+  let N' : EliminationStr (Fin r ⊕ Unit) 𝕜 := ⟨L', k, inr 1⟩
+  use N'
+  simp [toElim, N', Matrix.mul_assoc]
+  exact hLC
 
 end EliminationStr
 
@@ -328,12 +299,13 @@ open EliminationStr
 
 /-- Given any matrix `M`, we can find a product of transvections and row exchange matrices `L` such
 that `L * M` is an lower triangular matrix -/
-theorem exists_list_elimmatrix_mul_eq_lowertriangular (IH : ∀ (M : Matrix (Fin r) (Fin r) 𝕜),
-    ∃ E : List (EliminationStr (Fin r) 𝕜),
-    (List.prod (List.map toElim E) * M).BlockTriangular OrderDual.toDual)
+theorem exists_list_elimmatrix_mul_eq_lowertriangular
+    (IH : ∀ (M : Matrix (Fin r) (Fin r) 𝕜),
+      ∃ E : List (EliminationStr (Fin r) 𝕜),
+      (List.prod (List.map toElim E) * M).BlockTriangular OrderDual.toDual)
     (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
     ∃(E₁ : List (EliminationStr (Fin r ⊕ Unit) 𝕜)),
-    (List.prod (List.map toElim E₁) * M).BlockTriangular OrderDual.toDual := by
+      (List.prod (List.map toElim E₁) * M).BlockTriangular OrderDual.toDual := by
   have hNLC : ∃ N : EliminationStr (Fin r ⊕ Unit) 𝕜, ∀ (j : Fin r),
     (toElim N * M) (inl j) (inr Unit.unit) = 0 := by
    exact exists_elimmatrix_mul_lastcol r M
