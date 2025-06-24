@@ -153,8 +153,14 @@ theorem rowEx_respects_inclusion_1 (M: Matrix (Fin r) (Fin r) 𝕜) (i j : Fin r
     fromBlocks ((rowEx i j) * M) 0 0 (1: Matrix Unit Unit 𝕜) =
     (rowEx (inl i) (inl j)) * (fromBlocks M 0 0 (1 : Matrix Unit Unit 𝕜)) := by
   ext a b
-  cases' a with a a <;> cases' b with b b
-  any_goals {simp[rowEx_mul_eq_swap,Matrix.updateRow_apply]}
+  cases' a with ha1 ha2
+  . cases' b with hb1 hb2
+    . simp[rowEx_mul_eq_swap,Matrix.updateRow_apply]
+    . simp[rowEx_mul_eq_swap,Matrix.updateRow_apply]
+  . cases' b with hb1 hb2
+    . simp[rowEx_mul_eq_swap,Matrix.updateRow_apply]
+    . simp[rowEx_mul_eq_swap,Matrix.updateRow_apply]
+
 
 /-- Let `I'` be the matrix obtained by exchanging the ith and jth row of the rxr identity matrix.
 Then, the block matrix formed by blocks `I'`, `0`, `0`, `1` is equal to the matrix obtained by
@@ -189,11 +195,6 @@ def elimBlkIncl (e : EliminationStr n R ) : (EliminationStr (n ⊕ k) R ) where
   i := inl e.i
   j := inl e.j
 
-/-- `toElim (elimBlkIncl e)` is the block matrix with blocks `toElim e`, `0`, `0`, `1` -/
-theorem toElim_of_elimBlkIncl_eq_blkInc_of_toElim (e : EliminationStr (Fin r) 𝕜) :
-    toElim (elimBlkIncl e) = fromBlocks (toElim e) 0 0 (1 : Matrix Unit Unit 𝕜) := by
-  simp[toElim,elimBlkIncl,←rowEx_respects_inclusion ,sumInl_toMatrix_prod_mul]
-
 /-- The natural inclusion of EliminationStr n to EliminationStr n+kLet `L` be a list of elimination
 structure for rxr matrices, `M` be an rxr matrix, `N` be a 1x1 matrix, and `O` be a 1xk matrix.
 Let `M'` be the block matrix with blocks `M`, `0`, `O`, `N`. Let `A` be the matrix obtained by
@@ -203,9 +204,9 @@ theorem go (M : Matrix (Fin r) (Fin r) 𝕜) (L : List (EliminationStr (Fin r) �
     (N : Matrix Unit Unit 𝕜) (O : Matrix Unit (Fin r) 𝕜) :
     List.prod (List.map (toElim ∘ elimBlkIncl) L) * fromBlocks M (0: Matrix (Fin r) Unit 𝕜) O N =
     fromBlocks (List.prod (List.map toElim L) * M) (0: Matrix (Fin r) Unit 𝕜) O N := by
-  induction' L with t L IH
+  induction' L with e L IH
   · simp
-  · simp[Matrix.mul_assoc, IH, toElim_of_elimBlkIncl_eq_blkInc_of_toElim, fromBlocks_multiply]
+  · simp[Matrix.mul_assoc, IH, toElim,elimBlkIncl,←rowEx_respects_inclusion ,sumInl_toMatrix_prod_mul, fromBlocks_multiply]
 
 /-- List of k trivial (c is zero) transvections -/
 def listId(k:ℕ) : List (Matrix (Sum (Fin k) Unit) (Sum (Fin k) Unit) 𝕜) :=
@@ -220,9 +221,9 @@ theorem listId_prod_eq_id(r : ℕ) :
  multiplying on the left with the rowEx and then the list of transvections will make
  M₍ᵢ,ᵣ₊₁₎ = 0 for every 1 ≤ i < r+1 -/
 theorem transvec_mul_rowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜) :
-    ∃ i :Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜),
-    (∀ j : Fin r, (List.prod (List.map toMatrix L) * (((rowEx i (inr 1) :
-    Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr 1) = 0) := by
+    ∃ i : Fin r ⊕ Unit, ∃ L : List (TransvectionStruct (Sum (Fin r) Unit) 𝕜), ∀ j : Fin r,
+    (List.prod (List.map toMatrix L) * (((rowEx i (inr 1) :
+    Matrix (Sum (Fin r) Unit) (Sum (Fin r) Unit) 𝕜)) * M)) (inl j) (inr 1) = 0 := by
   by_cases hMne0: M (inr 1) (inr 1) ≠ 0
   --Case 1: Bottom-right entry is non-zero
   --Begin by creating the i and L that is required and inserting it in the goal
@@ -295,9 +296,6 @@ theorem transvec_mul_rowEx_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin 
       rw[hL,listId_prod_eq_id,Matrix.one_mul,rowEx_i_i_eq_id,Matrix.one_mul]
       exact hexistsNon0 j
 
-
-
-
 /-- Given a matrix `M`, there exists an elimination structure `N` such that when we multiply `M` on
 the left with the corresponding elimination matrix (`toElim N`), the first r entries of the last
 column of the resultant matrix are zero -/
@@ -356,5 +354,6 @@ theorem exists_list_elimmatrix_mul_eq_lowertriangular (IH : ∀ (M : Matrix (Fin
       exact hLC a
     rw[←X]
     exact Eq.symm (fromBlocks_toBlocks M')
-  rw[hM',go]
+  rw[hM']
+  rw[go]
   simpa[BlockTriangular]
