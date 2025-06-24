@@ -329,3 +329,46 @@ theorem exists_list_elimmatrix_mul_eq_lowertriangular
   rw[hM']
   rw[elimBlkIncl_toElim_prod_mul]
   simpa[BlockTriangular]
+
+
+/- Attempts at proving the more general result -/
+
+variable {p} [Fintype p] [Fintype n] [DecidableEq n] [DecidableEq p]
+
+theorem reindexing [LT nᵒᵈ] [LT pᵒᵈ] (M : Matrix p p 𝕜) (e : p ≃ n)
+    (H :
+      ∃ E : List (EliminationStr n 𝕜),
+      (List.prod (List.map toElim E) * Matrix.reindexAlgEquiv 𝕜 _ e M).BlockTriangular OrderDual.toDual):
+    ∃ E : List (EliminationStr p 𝕜),
+      (List.prod (List.map toElim E) * M).BlockTriangular OrderDual.toDual := by
+  rcases H with ⟨E, hE⟩
+  let elimStrReindex : EliminationStr n 𝕜 → EliminationStr p 𝕜 :=
+    fun es => {
+      L := es.L.map (reindexEquiv e.symm)
+      i := e.symm es.i
+      j := e.symm es.j
+    }
+  refine ⟨E.map elimStrReindex, ?_⟩
+  sorry
+
+
+theorem final (n : Type) [Fintype n] [DecidableEq n] [LT nᵒᵈ]
+    (M : Matrix n n 𝕜) : ∃ E₁ : List (EliminationStr n 𝕜),
+      (List.prod (List.map toElim E₁) * M).BlockTriangular OrderDual.toDual := by
+  suffices ∀ cn, Fintype.card n = cn →
+    ∃ E₁ : List (EliminationStr n 𝕜),
+      (List.prod (List.map toElim E₁) * M).BlockTriangular OrderDual.toDual
+    by exact this (Fintype.card n) rfl
+  intro cn hcn
+  induction cn generalizing n M with
+  | zero =>
+    haveI : IsEmpty n := Fintype.card_eq_zero_iff.mp hcn
+    use []
+    simp [BlockTriangular]
+  | succ r IH =>
+    have e : n ≃ Fin r ⊕ Unit := by
+      refine Fintype.equivOfCardEq ?_
+      rw [hcn]
+      rw [@Fintype.card_sum (Fin r) Unit _ _]
+      simp
+    sorry
