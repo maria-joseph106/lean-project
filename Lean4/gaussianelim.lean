@@ -82,25 +82,24 @@ theorem updateRow_eq_swap (i j : n)[Finite n] :
     rowEx i j := by
   ext a b
   by_cases ha : i = a
-  by_cases hb : j = b
-  · simp[ha,hb]
-    rw[rowEx,PEquiv.toMatrix_toPEquiv_eq]
-    dsimp
-    rw[Equiv.swap_apply_left,Matrix.updateRow_apply,Matrix.updateRow_self]
-    by_cases hab : a = b
-    rw[if_pos hab,ha,hab]
-    rfl
-    rw[if_neg hab,hb]
-    rfl
-  · rw [ha,rowEx]
-    rw[PEquiv.toMatrix_toPEquiv_eq]
-    dsimp
-    rw[Equiv.swap_apply_left,Matrix.updateRow_apply,Matrix.updateRow_self]
-    by_cases haj : a = j
-    · rw[if_pos haj, haj]
-      rfl
-    · rw[if_neg haj]
-      rfl
+  . by_cases hb : j = b
+    · simp[ha,hb]
+      rw[rowEx,PEquiv.toMatrix_toPEquiv_eq]
+      dsimp
+      rw[Equiv.swap_apply_left,Matrix.updateRow_apply,Matrix.updateRow_self]
+      by_cases hab : a = b
+      . rw[if_pos hab,ha,hab]
+        rfl
+      . rw[if_neg hab,hb]
+        rfl
+    · rw [ha,rowEx,PEquiv.toMatrix_toPEquiv_eq]
+      dsimp
+      rw[Equiv.swap_apply_left,Matrix.updateRow_apply,Matrix.updateRow_self]
+      by_cases haj : a = j
+      · rw[if_pos haj, haj]
+        rfl
+      · rw[if_neg haj]
+        rfl
   · rw[rowEx]
     rw[PEquiv.toMatrix_toPEquiv_eq,Matrix.updateRow_apply,Matrix.updateRow_apply]
     dsimp
@@ -117,20 +116,20 @@ theorem rowEx_mul_eq_swap (i j : n) (M : Matrix n n R) [Fintype n] :
     (rowEx i j : Matrix n n R) * M = updateRow (updateRow (M) i (M j)) j (M i) := by
   ext a b
   by_cases ha : i = a
-  by_cases hb : j = b
-  · simp[ha,hb]
-    simp[Matrix.updateRow_apply]
-    by_cases hab : a = b
-    · simp[if_pos hab,rowEx,PEquiv.toMatrix_toPEquiv_mul,hab]
-    · simp[if_neg hab,rowEx]
-      rw[PEquiv.toMatrix_toPEquiv_mul]
-      simp
-  · simp[Matrix.updateRow_apply,ha]
-    by_cases haj : a = j
-    · rw[if_pos haj,rowEx,PEquiv.toMatrix_toPEquiv_mul]
-      simp[haj]
-    · rw[if_neg haj,rowEx,PEquiv.toMatrix_toPEquiv_mul]
-      simp
+  . by_cases hb : j = b
+    · simp[ha,hb]
+      simp[Matrix.updateRow_apply]
+      by_cases hab : a = b
+      · simp[if_pos hab,rowEx,PEquiv.toMatrix_toPEquiv_mul,hab]
+      · simp[if_neg hab,rowEx]
+        rw[PEquiv.toMatrix_toPEquiv_mul]
+        simp
+    · simp[Matrix.updateRow_apply,ha]
+      by_cases haj : a = j
+      · rw[if_pos haj,rowEx,PEquiv.toMatrix_toPEquiv_mul]
+        simp[haj]
+      · rw[if_neg haj,rowEx,PEquiv.toMatrix_toPEquiv_mul]
+        simp
   · simp[Matrix.updateRow_apply]
     by_cases haj : a = j
     · rw[if_pos haj,rowEx,PEquiv.toMatrix_toPEquiv_mul]
