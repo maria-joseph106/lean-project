@@ -188,6 +188,11 @@ variable {n R}
 def toElim (e : EliminationStr n R) [Fintype n] : Matrix n n R :=
   List.prod (List.map toMatrix (e.L)) * (rowEx e.i e.j)
 
+theorem Elim_mk [Fintype n] (i j : n) (L : List (TransvectionStruct n R)) :
+    toElim ⟨L,i,j⟩ = List.prod (List.map toMatrix L) * (rowEx i j):=
+  rfl
+
+
 /-- Converts an elimination structure for nxn matrix to an elimination structure for (n+k)x(n+k)
 matrix -/
 def elimBlkIncl (e : EliminationStr n R ) : (EliminationStr (n ⊕ k) R ) where
@@ -292,6 +297,30 @@ theorem exists_elimmatrix_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r
   use N'
   simp [toElim, N', Matrix.mul_assoc]
   exact hLC
+
+
+variable {p}
+
+/--Reindexing-/
+def reindexEq (e : n ≃ p) (e' : EliminationStr n 𝕜) : EliminationStr p 𝕜 where
+  i := e e'.i
+  j := e e'.j
+  L := (List.map (TransvectionStruct.reindexEquiv e) (e'.L))
+
+variable [Fintype n] [Fintype p] [DecidableEq n] [DecidableEq p]
+
+theorem reindexEquiv_toElim (e : n ≃ p) (E : EliminationStr n 𝕜) :
+    toElim (E.reindexEq  e) = reindexAlgEquiv 𝕜 _ e (toElim E) := by
+  rcases E with ⟨ L, i, j⟩
+  simp only [toElim, reindexEq, reindexAlgEquiv_apply, reindex_apply]
+  simp [toMatrix_reindexEquiv_prod]
+  rw [submatrix_mul (List.prod (List.map toMatrix L)) (rowEx i j) e.symm e.symm e.symm (Equiv.bijective _)]
+  have h : rowEx (e i) (e j) = (rowEx i j : Matrix n n 𝕜).submatrix e.symm e.symm := by
+    ext a b
+    simp [rowEx,PEquiv.toMatrix_toPEquiv_eq]
+    rw [Equiv.swap_apply_def]
+    sorry
+
 
 end EliminationStr
 
