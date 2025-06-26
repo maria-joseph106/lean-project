@@ -309,7 +309,7 @@ def elimStrReindex (e : n ≃ p) (e' : EliminationStr n 𝕜) : EliminationStr p
 
 variable [Fintype n] [Fintype p] [DecidableEq p]
 
-theorem to_Matrix_elimStrReindex (e : n ≃ p) (E : EliminationStr n 𝕜) :
+theorem toMatrix_elimStrReindex (e : n ≃ p) (E : EliminationStr n 𝕜) :
     toElim (E.elimStrReindex  e) = reindexAlgEquiv 𝕜 _ e (toElim E) := by
   rcases E with ⟨ L, i, j⟩
   simp only [toElim, elimStrReindex]
