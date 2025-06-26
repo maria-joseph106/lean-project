@@ -363,10 +363,8 @@ theorem toMatrix_elimStrReindex (e : n ≃ p) (E : EliminationStr n 𝕜) :
     simp at h3
     exact absurd h3 h1
   rw[←h2]
-  simp only [toElim, reindexEq, reindexAlgEquiv_apply, reindex_apply]
+  simp only [toElim, reindexAlgEquiv_apply, reindex_apply]
   simp [toMatrix_reindexEquiv_prod]
-
-
 
 
 end EliminationStr
