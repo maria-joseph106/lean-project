@@ -407,23 +407,27 @@ theorem exists_list_elimmatrix_mul_eq_lowertriangular
 
 /- Attempts at proving the more general result -/
 
-variable {p} [Fintype p] [Fintype n] [DecidableEq n] [DecidableEq p]
+variable {p} [Fintype p] [Fintype n] [DecidableEq p]
 
-theorem reindexing [LT nᵒᵈ] [LT pᵒᵈ] (M : Matrix p p 𝕜) (e : p ≃ n)
-    (H :
-      ∃ E : List (EliminationStr n 𝕜),
-      (List.prod (List.map toElim E) * Matrix.reindexAlgEquiv 𝕜 _ e M).BlockTriangular OrderDual.toDual):
-    ∃ E : List (EliminationStr p 𝕜),
-      (List.prod (List.map toElim E) * M).BlockTriangular OrderDual.toDual := by
+theorem reindexing [LT nᵒᵈ] [LT pᵒᵈ] (M : Matrix p p 𝕜) (f : p ≃ n)
+    (H : ∃ E : EliminationStr n 𝕜,
+      ((toElim E) * (Matrix.reindexAlgEquiv 𝕜 _ f M)).BlockTriangular (OrderDual.toDual ∘ f.symm)):
+    ∃ E : EliminationStr p 𝕜,
+      ((toElim E) * M).BlockTriangular OrderDual.toDual := by
   rcases H with ⟨E, hE⟩
-  let elimStrReindex : EliminationStr n 𝕜 → EliminationStr p 𝕜 :=
-    fun es => {
-      L := es.L.map (reindexEquiv e.symm)
-      i := e.symm es.i
-      j := e.symm es.j
-    }
-  refine ⟨E.map elimStrReindex, ?_⟩
-  sorry
+  have h1 : M = reindexAlgEquiv 𝕜 _ f.symm (reindexAlgEquiv 𝕜 _ f M) := by
+    simp [Matrix.reindexAlgEquiv, AlgEquiv.symm_apply_apply]
+  refine ⟨elimStrReindex f.symm E, ?_⟩
+  simp only [toMatrix_elimStrReindex]
+  --rw [h1]
+  have h2: (reindexAlgEquiv 𝕜 𝕜 f.symm E.toElim * M) = (reindexAlgEquiv 𝕜 𝕜 f.symm (E.toElim * reindexAlgEquiv 𝕜 𝕜 f M)) := by
+    rw [reindexAlgEquiv_mul, reindexAlgEquiv_apply, reindexAlgEquiv_apply]
+    simp only [reindex_apply, symm_symm, reindexAlgEquiv_apply, submatrix_submatrix, symm_comp_self,
+      submatrix_id_id]
+  rw [h2]
+  simp only [reindexAlgEquiv_apply] at hE
+  simp only [reindexAlgEquiv_apply, blockTriangular_reindex_iff]
+  exact hE
 
 
 theorem final (n : Type) [Fintype n] [DecidableEq n] [LT nᵒᵈ]
