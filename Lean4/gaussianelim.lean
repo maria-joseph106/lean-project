@@ -457,23 +457,31 @@ theorem reindexing_list_elimStr [LT nᵒᵈ] [LT pᵒᵈ] (M : Matrix p p 𝕜) 
   exact hLE
 
 
-theorem final (n : Type) [Fintype n] [DecidableEq n] [LT nᵒᵈ]
-    (M : Matrix n n 𝕜) : ∃ E₁ : List (EliminationStr n 𝕜),
-      (List.prod (List.map toElim E₁) * M).BlockTriangular OrderDual.toDual := by
-  suffices ∀ cn, Fintype.card n = cn →
-    ∃ E₁ : List (EliminationStr n 𝕜),
-      (List.prod (List.map toElim E₁) * M).BlockTriangular OrderDual.toDual
-    by exact this (Fintype.card n) rfl
-  intro cn hcn
-  induction cn generalizing n M with
-  | zero =>
-    haveI : IsEmpty n := Fintype.card_eq_zero_iff.mp hcn
-    use []
-    simp [BlockTriangular]
-  | succ r IH =>
-    have e : n ≃ Fin r ⊕ Unit := by
-      refine Fintype.equivOfCardEq ?_
-      rw [hcn]
-      rw [@Fintype.card_sum (Fin r) Unit _ _]
-      simp
-    sorry
+def canInc : Fin (r + 1) ≃ Fin r ⊕ Unit :=
+  finSumFinEquiv.symm.trans (Equiv.sumCongr (Equiv.refl _) finOneEquiv)
+
+theorem LT_equiv_canInc (r : ℕ) :
+    (canInc r) ∘ (LT (Fin (r + 1))) = (LT (Fin r ⊕ Unit)) := by
+  sorry
+
+theorem canInc_preserves_order (r : ℕ) :
+    ⇑OrderDual.toDual = (⇑OrderDual.toDual ∘ ⇑(canInc r) ∘ (⇑(canInc r).symm)) := by
+  ext x
+  simp
+
+
+theorem final (n : ℕ) (M : Matrix (Fin n) (Fin n) 𝕜) :
+    ∃ LE : List (EliminationStr (Fin n) 𝕜), (List.prod (List.map toElim LE) * M).BlockTriangular (OrderDual.toDual) := by
+  --induction' n, hn using Nat.le_induction with r hr ih
+  induction' n with r hr
+  . use []
+    simp [EliminationStr.toElim, rowEx_i_i_eq_id, Matrix.one_mul, BlockTriangular]
+  . exact reindexing_list_elimStr _ M (canInc r) (exists_list_elimmatrix_mul_eq_lowertriangular r hr (Matrix.reindexAlgEquiv 𝕜 𝕜 (canInc r) M))
+
+
+    --let M' := Matrix.reindexAlgEquiv 𝕜 𝕜 h1 M
+    --have h2 := exists_list_elimmatrix_mul_eq_lowertriangular r hr M'
+    --rcases h2 with ⟨E₁, hE₁⟩
+    --use E₁.map (EliminationStr.elimStrReindex h1.symm)
+    --have h3: M' = Matrix.reindexAlgEquiv 𝕜 𝕜 h1 M := by exact rfl
+    --rw [h3] at hE₁
