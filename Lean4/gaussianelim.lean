@@ -182,16 +182,15 @@ structure EliminationStr where
 
 namespace EliminationStr
 
-variable {n R}
+variable {p n R} [Fintype p] [Fintype n] [DecidableEq p]
 
 /-- Converts an elimination structure to the corresponding elimination matrix -/
-def toElim (e : EliminationStr n R) [Fintype n] : Matrix n n R :=
+def toElim (e : EliminationStr n R) : Matrix n n R :=
   List.prod (List.map toMatrix (e.L)) * (rowEx e.i e.j)
 
-theorem Elim_mk [Fintype n] (i j : n) (L : List (TransvectionStruct n R)) :
+theorem Elim_mk (i j : n) (L : List (TransvectionStruct n R)) :
     toElim ⟨L,i,j⟩ = List.prod (List.map toMatrix L) * (rowEx i j):=
   rfl
-
 
 /-- Converts an elimination structure for nxn matrix to an elimination structure for (n+k)x(n+k)
 matrix -/
@@ -199,6 +198,78 @@ def elimBlkIncl (e : EliminationStr n R ) : (EliminationStr (n ⊕ k) R ) where
   L := (List.map (sumInl k) (e.L))
   i := inl e.i
   j := inl e.j
+
+/-Reindexing-/
+def elimStrReindex (e : n ≃ p) (e' : EliminationStr n 𝕜) : EliminationStr p 𝕜 where
+  i := e e'.i
+  j := e e'.j
+  L := (List.map (TransvectionStruct.reindexEquiv e) (e'.L))
+
+theorem toMatrix_elimStrReindex (e : n ≃ p) (E : EliminationStr n 𝕜) :
+    toElim (elimStrReindex e E) = reindexAlgEquiv 𝕜 _ e (toElim E) := by
+  rcases E with ⟨ L, i, j⟩
+  simp only [toElim, elimStrReindex]
+  have : (reindexAlgEquiv 𝕜 𝕜 e) ((List.map toMatrix L).prod * rowEx i j) =
+  (reindexAlgEquiv 𝕜 𝕜 e) ((List.map toMatrix L).prod) * (reindexAlgEquiv 𝕜 𝕜 e) (rowEx i j) :=by
+    simp [AlgEquiv.map_mul']
+  rw[this]
+  have h2: rowEx (e i) (e j) = (reindexAlgEquiv 𝕜 𝕜 e) (rowEx i j):= by
+    rw[reindexAlgEquiv_apply]
+    rw[reindex_apply]
+    ext a b
+    rw[submatrix_apply]
+    simp[PEquiv.toMatrix_toPEquiv_eq, rowEx]
+    split_ifs with h1 h2 h3
+    any_goals rfl
+    any_goals rw [Equiv.swap_apply_def] at h1
+    any_goals rw [Equiv.swap_apply_def] at h2
+    any_goals rw [Equiv.swap_apply_def] at h3
+    any_goals simp
+    any_goals split_ifs at h1 with h11 h12
+    any_goals split_ifs at h2 with h21 h22
+    any_goals split_ifs at h3 with h31 h32
+    any_goals apply e.apply_eq_iff_eq_symm_apply.mp at h1
+    any_goals apply e.symm_apply_eq.mpr at h11
+    exact absurd h1 h2
+    exact absurd h11 h21
+    exact absurd h11 h21
+    any_goals apply e.symm_apply_eq.mp at h21
+    exact absurd h21 h11
+    exact absurd h1 h2
+    any_goals apply e.symm_apply_eq.mpr at h12
+    exact absurd h12 h22
+    exact absurd h21 h11
+    any_goals apply e.symm_apply_eq.mp at h22
+    exact absurd h22 h12
+    rw [h1] at h2
+    rw[←ne_eq] at h2
+    exact h2 rfl
+    any_goals apply e.apply_eq_iff_eq_symm_apply.mpr at h3
+    exact absurd h3 h1
+    exact absurd h11 h31
+    any_goals apply e.symm_apply_eq.mp at h31
+    exact absurd h11 h31
+    exact absurd h31 h11
+    exact absurd h3 h1
+    any_goals apply e.symm_apply_eq.mp at h32
+    exact absurd h12 h32
+    exact absurd h31 h11
+    exact absurd h32 h12
+    apply e.eq_symm_apply.mpr at h3
+    simp at h3
+    exact absurd h3 h1
+  rw[←h2]
+  simp only [toElim, reindexAlgEquiv_apply, reindex_apply]
+  simp [toMatrix_reindexEquiv_prod]
+
+theorem toMatrix_elimStrReindex_list (e : n ≃ p) (LE : List (EliminationStr n 𝕜)):
+    List.map toElim (List.map (elimStrReindex e) LE) =
+    List.map (reindexAlgEquiv 𝕜 𝕜 e) (List.map toElim LE) := by
+  rw [List.map_map, List.map_map]
+  simp only [reindexAlgEquiv_apply, reindex_apply, List.map_inj_left, Function.comp_apply]
+  intro e he
+  rw [toMatrix_elimStrReindex]
+  simp only [reindexAlgEquiv_apply, reindex_apply]
 
 /-- The natural inclusion of EliminationStr n to EliminationStr n+k. Let `L` be a list of elimination
 structure for rxr matrices, `M` be an rxr matrix, `N` be a 1x1 matrix, and `O` be a 1xk matrix.
@@ -299,74 +370,6 @@ theorem exists_elimmatrix_mul_lastcol (M : Matrix (Sum (Fin r) Unit) (Sum (Fin r
   exact hLC
 
 
-variable {p}
-
-/--Reindexing-/
-def elimStrReindex (e : n ≃ p) (e' : EliminationStr n 𝕜) : EliminationStr p 𝕜 where
-  i := e e'.i
-  j := e e'.j
-  L := (List.map (TransvectionStruct.reindexEquiv e) (e'.L))
-
-variable [Fintype n] [Fintype p] [DecidableEq p]
-
-theorem toMatrix_elimStrReindex (e : n ≃ p) (E : EliminationStr n 𝕜) :
-    toElim (E.elimStrReindex  e) = reindexAlgEquiv 𝕜 _ e (toElim E) := by
-  rcases E with ⟨ L, i, j⟩
-  simp only [toElim, elimStrReindex]
-  have : (reindexAlgEquiv 𝕜 𝕜 e) ((List.map toMatrix L).prod * rowEx i j) =
-  (reindexAlgEquiv 𝕜 𝕜 e) ((List.map toMatrix L).prod) * (reindexAlgEquiv 𝕜 𝕜 e) (rowEx i j) :=by
-    simp [AlgEquiv.map_mul']
-  rw[this]
-  have h2: rowEx (e i) (e j) = (reindexAlgEquiv 𝕜 𝕜 e) (rowEx i j):= by
-    rw[reindexAlgEquiv_apply]
-    rw[reindex_apply]
-    ext a b
-    rw[submatrix_apply]
-    simp[PEquiv.toMatrix_toPEquiv_eq, rowEx]
-    split_ifs with h1 h2 h3
-    any_goals rfl
-    any_goals rw [Equiv.swap_apply_def] at h1
-    any_goals rw [Equiv.swap_apply_def] at h2
-    any_goals rw [Equiv.swap_apply_def] at h3
-    any_goals simp
-    any_goals split_ifs at h1 with h11 h12
-    any_goals split_ifs at h2 with h21 h22
-    any_goals split_ifs at h3 with h31 h32
-    any_goals apply e.apply_eq_iff_eq_symm_apply.mp at h1
-    any_goals apply e.symm_apply_eq.mpr at h11
-    exact absurd h1 h2
-    exact absurd h11 h21
-    exact absurd h11 h21
-    any_goals apply e.symm_apply_eq.mp at h21
-    exact absurd h21 h11
-    exact absurd h1 h2
-    any_goals apply e.symm_apply_eq.mpr at h12
-    exact absurd h12 h22
-    exact absurd h21 h11
-    any_goals apply e.symm_apply_eq.mp at h22
-    exact absurd h22 h12
-    rw [h1] at h2
-    rw[←ne_eq] at h2
-    exact h2 rfl
-    any_goals apply e.apply_eq_iff_eq_symm_apply.mpr at h3
-    exact absurd h3 h1
-    exact absurd h11 h31
-    any_goals apply e.symm_apply_eq.mp at h31
-    exact absurd h11 h31
-    exact absurd h31 h11
-    exact absurd h3 h1
-    any_goals apply e.symm_apply_eq.mp at h32
-    exact absurd h12 h32
-    exact absurd h31 h11
-    exact absurd h32 h12
-    apply e.eq_symm_apply.mpr at h3
-    simp at h3
-    exact absurd h3 h1
-  rw[←h2]
-  simp only [toElim, reindexAlgEquiv_apply, reindex_apply]
-  simp [toMatrix_reindexEquiv_prod]
-
-
 end EliminationStr
 
 open EliminationStr
@@ -428,6 +431,30 @@ theorem reindexing [LT nᵒᵈ] [LT pᵒᵈ] (M : Matrix p p 𝕜) (f : p ≃ n)
   simp only [reindexAlgEquiv_apply] at hE
   simp only [reindexAlgEquiv_apply, blockTriangular_reindex_iff]
   exact hE
+
+theorem reindexing_list_elimStr [LT nᵒᵈ] [LT pᵒᵈ] (M : Matrix p p 𝕜) (f : p ≃ n)
+    (H : ∃ LE : List (EliminationStr n 𝕜),
+      (List.prod (List.map toElim LE) * (Matrix.reindexAlgEquiv 𝕜 _ f M)).BlockTriangular (OrderDual.toDual ∘ f.symm)):
+    ∃ LE : List (EliminationStr p 𝕜), (List.prod (List.map toElim LE) * M).BlockTriangular OrderDual.toDual := by
+  rcases H with ⟨LE, hLE⟩
+  refine ⟨LE.map (elimStrReindex f.symm), ?_⟩
+  simp only [List.map_map]
+  rw [List.comp_map toElim (elimStrReindex f.symm) LE]
+  rw [toMatrix_elimStrReindex_list]
+  have h1 : M = reindexAlgEquiv 𝕜 _ f.symm (reindexAlgEquiv 𝕜 _ f M) := by
+    exact (AlgEquiv.symm_apply_eq (reindexAlgEquiv 𝕜 𝕜 f.symm)).mp rfl
+  rw [Eq.symm (map_list_prod (reindexAlgEquiv 𝕜 𝕜 f.symm) (List.map toElim LE))]
+  have h2: (List.map (⇑(reindexAlgEquiv 𝕜 𝕜 f.symm)) (List.map toElim LE)).prod  =
+      ⇑(reindexAlgEquiv 𝕜 𝕜 f.symm) (List.map toElim LE).prod := by
+    exact Eq.symm (map_list_prod (reindexAlgEquiv 𝕜 𝕜 f.symm) (List.map toElim LE))
+  rw [h1]
+  have h3: (reindexAlgEquiv 𝕜 𝕜 f.symm) (List.map toElim LE).prod *
+      (reindexAlgEquiv 𝕜 𝕜 f.symm) ((reindexAlgEquiv 𝕜 𝕜 f) M) =
+      (reindexAlgEquiv 𝕜 𝕜 f.symm) ((List.map toElim LE).prod * ((reindexAlgEquiv 𝕜 𝕜 f) M)) := by exact Eq.symm (reindexAlgEquiv_mul 𝕜 𝕜 f.symm (List.map toElim LE).prod ((reindexAlgEquiv 𝕜 𝕜 f) M))
+  rw [Eq.symm (reindexAlgEquiv_mul 𝕜 𝕜 f.symm (LE.map toElim).prod ((reindexAlgEquiv 𝕜 𝕜 f) M))]
+  simp only [reindexAlgEquiv_apply] at hLE
+  simp only [reindexAlgEquiv_apply, blockTriangular_reindex_iff]
+  exact hLE
 
 
 theorem final (n : Type) [Fintype n] [DecidableEq n] [LT nᵒᵈ]
